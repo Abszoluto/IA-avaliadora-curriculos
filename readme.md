@@ -1,4 +1,4 @@
-# Analisador de Currículos com IA
+# Analisador de Currículos com IA (ResumeIA)
 Aplicação web em Flask para avaliar a compatibilidade entre um currículo e uma vaga específica.  
 O foco é bem prático: ajudar a pessoa candidata a entender se faz sentido aplicar para a vaga, o que está faltando no currículo e como melhorar o texto.
 
