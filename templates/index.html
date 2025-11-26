@@ -1,0 +1,1097 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="sr-hero">
+  <div class="sr-hero-inner">
+    <h1 class="sr-title-gradient">Ajuste seu currículo para cada vaga certa.</h1>
+    <p class="sr-hero-text">
+      Compare o currículo com a descrição da vaga e use o resultado para fazer ajustes precisos antes de se candidatar.
+    </p>
+    <div class="sr-hero-actions">
+      <button
+        type="button"
+        class="sr-button sr-button-outline sr-hero-howto"
+        onclick="toggleModal('howto-modal')"
+      >
+        Como usar
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="sr-main-panel">
+  <form id="analyze-form" method="post" action="{{ url_for('analyze') }}" enctype="multipart/form-data">
+    <div class="sr-main-panel-inner">
+      <div class="sr-panel-row">
+        <div class="sr-panel-label">
+          Currículo
+        </div>
+        <div class="sr-panel-field">
+        <label class="sr-upload-area">
+        <input type="file" name="cv_file" accept=".pdf,.docx" class="sr-input-file" required/>
+        <div class="sr-upload-inner">
+          <div class="sr-upload-placeholder"></div>
+            <div class="sr-upload-text">
+              <span class="sr-upload-title">Selecione o arquivo de currículo</span>
+              <span class="sr-upload-subtitle">Formatos aceitos: PDF e DOCX</span>
+                <div id="cv-file-info" class="sr-upload-file-info">
+                  <span id="cv-file-label" class="sr-upload-file-label">
+                    Nenhum arquivo selecionado
+                  </span>
+                  <span id="cv-file-name" class="sr-upload-file-name"></span>
+                </div>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+      <div class="sr-results-separator"></div>
+      <div class="sr-panel-row sr-panel-row-multiline">
+        <div class="sr-panel-label">
+          Vaga
+        </div>
+        <div class="sr-panel-field">
+          {% set current_job_mode = job_mode or 'auto' %}
+
+          <p class="sr-block-caption" style="margin-bottom:6px;">
+            Como você quer preencher os dados da vaga?
+          </p>
+          <div class="sr-results-separator"></div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;">
+            <label class="sr-block-caption" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input
+                type="radio"
+                name="job_mode"
+                value="auto"
+                {% if current_job_mode != 'manual' %}checked{% endif %}
+              />
+              <span>Extrair dados da vaga automaticamente (através do link da vaga)</span>
+            </label>
+
+            <label class="sr-block-caption" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input
+                type="radio"
+                name="job_mode"
+                value="manual"
+                {% if current_job_mode == 'manual' %}checked{% endif %}
+              />
+              <span>Inserir dados da vaga manualmente</span>
+            </label>
+          </div>
+
+          <!-- Modo automático através do link-->
+          <div
+            id="job-mode-auto"
+            style="{% if current_job_mode == 'manual' %}display:none;{% else %}display:block;{% endif %}margin-bottom:10px;"
+          >
+            <div class="sr-input-wrapper" style="margin-bottom:10px;">
+              <input
+                type="text"
+                name="job_link"
+                value="{{ job_link or '' }}"
+                inputmode="url"
+                placeholder="Cole aqui o link da vaga (LinkedIn)"
+              />
+            </div>
+
+            <p class="sr-block-caption" style="margin-top:6px;">
+              Vamos tentar localizar automaticamente título, empresa e descrição da vaga a partir deste link.
+              Se algo vier errado, volte e use o modo manual para ajustar.
+            </p>
+          </div>
+
+          <!--Preenchimento manual-->
+          <div
+            id="job-mode-manual"
+            style="{% if current_job_mode == 'manual' %}display:block;{% else %}display:none;{% endif %}"
+          >
+            <div class="sr-input-wrapper" style="margin-bottom:10px;">
+              <span class="sr-input-icon">Título da vaga</span>
+              <input
+                type="text"
+                name="job_title"
+                value="{{ job_title or '' }}"
+                placeholder="Ex: Assistente Administrativo"
+              />
+            </div>
+
+            <div class="sr-input-wrapper" style="margin-bottom:10px;">
+              <span class="sr-input-icon">Empresa (opcional)</span>
+              <input
+                type="text"
+                name="company"
+                value="{{ company or '' }}"
+                placeholder="Ex: Empresa XPTO"
+              />
+            </div>
+
+            <textarea
+              name="job_description"
+              rows="10"
+              placeholder="Cole a descrição completa da vaga, incluindo responsabilidades, tecnologias e nível de senioridade."
+              class="sr-panel-textarea"
+            >{{ job_description or '' }}</textarea>
+
+            <p class="sr-block-caption" style="margin-top:6px;">
+              Dica: copie só a parte da descrição da vaga (responsabilidades, requisitos, atividades)
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="sr-panel-row sr-panel-row-actions">
+        <div class="sr-panel-label"></div>
+        <div class="sr-panel-field sr-panel-actions">
+          <button type="submit" class="sr-button sr-button-primary sr-analyze-button">
+            Analisar compatibilidade
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</section>
+
+<!-- Modal: Como usar -->
+<div id="howto-modal" class="sr-modal">
+  <div class="sr-modal-content sr-modal-howto">
+    <h2>Como usar</h2>
+    <div class="sr-results-separator"></div>
+    <p class="sr-modal-subtitle">
+      O objetivo é aproximar o seu currículo da vaga específica em que você pretende se candidatar.
+    </p>
+
+    <div
+      class="sr-howto-grid"
+      style="display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-top:10px;"
+    >
+      <div
+        class="sr-howto-section sr-plan-card"
+        style="padding:14px 16px;border-radius:14px;border:1px solid #262626;background:#050816;"
+      >
+        <h3 style="margin-bottom:6px;">Passos principais</h3>
+        <ol class="sr-howto-list">
+          <li>Envie o currículo que você utiliza nas candidaturas (PDF ou DOCX).</li>
+          <li>
+            Escolha se quer
+            <strong>extrair os dados automaticamente pelo link da vaga</strong>
+            ou <strong>preencher as informações da vaga manualmente</strong>.
+          </li>
+          <li>
+            No modo automático, cole o link da vaga (LinkedIn) e deixe o sistema
+            recuperar título, empresa e descrição. No modo manual, cole a descrição completa da vaga.
+          </li>
+          <li>
+            Clique em <strong>“Analisar compatibilidade”</strong> e use o relatório para ajustar
+            pontos do currículo antes de enviar para a empresa.
+          </li>
+        </ol>
+      </div>
+
+      <div
+        class="sr-howto-section sr-plan-card"
+        style="padding:14px 16px;border-radius:14px;border:1px solid #262626;background:#050816;"
+      >
+        <h3 style="margin-bottom:6px;">Para obter uma boa análise</h3>
+        <ul class="sr-howto-list">
+          <li>Mantenha o currículo atualizado com experiências e resultados recentes.</li>
+          <li>
+            Se usar o link da vaga, confira rapidamente se o texto extraído faz sentido
+            (responsabilidades e requisitos principais).
+          </li>
+          <li>
+            Se colar a descrição manualmente, copie apenas o texto da vaga
+            (responsabilidades, requisitos, atividades), sem comentários da página ou rodapés.
+          </li>
+          <li>
+            Dê atenção especial às habilidades técnicas e comportamentais citadas no anúncio.
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="sr-results-separator"></div>
+    <div class="sr-modal-actions">
+      <button
+        type="button"
+        class="sr-button sr-button-primary"
+        onclick="toggleModal('howto-modal')"
+      >
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmação da vaga (modo automático) -->
+<div id="job-confirm-modal" class="sr-modal">
+  <div class="sr-modal-content sr-modal-howto">
+    <h2>Confirmar dados da vaga</h2>
+    <div class="sr-results-separator"></div>
+    <p class="sr-modal-subtitle">
+      Confira se conseguimos extrair corretamente as informações da vaga a partir do link do LinkedIn.
+    </p>
+
+    <div class="sr-howto-section">
+      <label for="confirm-job-title">Título da vaga</label>
+      <div class="sr-input-wrapper">
+        <input
+          type="text"
+          id="confirm-job-title"
+          readonly
+          placeholder="Título da vaga"
+        />
+      </div>
+    </div>
+
+    <div class="sr-howto-section">
+      <label for="confirm-company">Nome da empresa</label>
+      <div class="sr-input-wrapper">
+        <input
+          type="text"
+          id="confirm-company"
+          readonly
+          placeholder="Empresa"
+        />
+      </div>
+    </div>
+
+    <div class="sr-howto-section">
+      <label for="confirm-job-description">Descrição da vaga</label>
+      <textarea
+        id="confirm-job-description"
+        class="sr-panel-textarea"
+        readonly
+        placeholder="Descrição extraída da vaga..."
+        style="min-height: 160px;"
+      ></textarea>
+    </div>
+<div class="sr-results-separator"></div>
+    <p class="sr-modal-subtitle" style="margin-top: 10px;">
+      As informações estão corretas ?
+    </p>
+
+    <div class="sr-modal-actions">
+      <button
+        type="button"
+        class="sr-button sr-button-tertiary"
+        id="job-confirm-cancel"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="sr-button sr-button-primary"
+        id="job-confirm-ok"
+      >
+        Confirmar e continuar
+      </button>
+    </div>
+  </div>
+</div>
+
+{% if analysis %}
+<!-- Modal de resultados -->
+<div id="analysis-modal" class="sr-modal sr-modal-open">
+  <div class="sr-modal-content sr-modal-analysis">
+    <div class="sr-modal-analysis-header">
+      <h1 class="sr-title-gradient">Resultados da análise</h1>
+      <button
+        type="button"
+        class="sr-button sr-button-tertiary sr-modal-close-button"
+        onclick="toggleModal('analysis-modal')"
+      >
+        Fechar
+      </button>
+    </div>
+
+    <div
+      class="sr-modal-body-scroll"
+      style="max-height: calc(100vh - 120px); overflow-y: auto; padding-right: 4px;"
+    >
+      <div class="sr-analysis-top">
+        <div class="sr-score-visual">
+          <svg width="160" height="160" viewBox="0 0 150 150">
+            <circle
+              cx="75"
+              cy="75"
+              r="60"
+              fill="none"
+              stroke="#1f2937"
+              stroke-width="10"
+            ></circle>
+            <circle
+              id="score-ring"
+              cx="75"
+              cy="75"
+              r="60"
+              fill="none"
+              stroke-width="10"
+              stroke-linecap="round"
+              stroke-dasharray="377"
+              stroke-dashoffset="377"
+              transform="rotate(-90 75 75)"
+            ></circle>
+          </svg>
+          <div class="sr-score-center">
+            <span id="score-text" class="sr-score-value">0%</span>
+            <span class="sr-score-caption">Aderência geral</span>
+          </div>
+        </div>
+
+        <div class="sr-results-summary">
+          {% if job_title or company %}
+            <p class="sr-block-caption" style="margin-bottom:4px;">
+              Vaga alvo:
+              <strong>{{ job_title or "Vaga sem título" }}</strong>
+              {% if company %}
+                – <span class="sr-company-name">{{ company }}</span>
+              {% endif %}
+            </p>
+          {% endif %}
+
+          {% if job_link %}
+            <p class="sr-block-caption" style="margin-bottom:6px;">
+              Link da vaga:
+              <a
+                href="{{ job_link }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="sr-job-link"
+              >
+                Ver anúncio da vaga
+              </a>
+            </p>
+          {% endif %}
+            <div class="sr-results-separator"></div>
+          <p
+            style="margin:8px 0 6px;font-size:1.05rem;font-weight:600;color:#f9fafb;"
+          >
+          {% if analysis.score >= 80 %}
+            Perfil forte para esta vaga
+          {% elif analysis.score >= 60 %}
+            Perfil competitivo
+          {% else %}
+            Perfil precisa de ajustes
+          {% endif %}
+          </p>
+
+          <p class="sr-results-text" style="margin-bottom:6px;">
+            {{ analysis.verdict_text }}
+          </p>
+
+          <!--INDICADORES PRINCIPAIS -->
+          <div
+            class="sr-plan-card"
+            style="margin-top:12px;padding:12px 14px;border-radius:14px;border:1px solid #262626;background:#0b0b0f;"
+          >
+            <h5>Indicadores principais da vaga</h5>
+            <p class="sr-block-caption" style="margin:2px 0 10px;">
+              Panorama rápido da conexão do seu currículo com o texto da vaga.
+            </p>
+
+            <div
+              class="sr-metrics"
+              style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;"
+            >
+              <div class="sr-metric">
+                <span class="sr-metric-label">Palavras-chave da vaga</span>
+                <div class="sr-metric-bar">
+                  <div
+                    class="sr-metric-bar-fill"
+                    style="width: {{ analysis.tfidf or 0 }}%;"
+                  ></div>
+                </div>
+                <span class="sr-metric-value">{{ analysis.tfidf or 0 }}%</span>
+              </div>
+
+              <div class="sr-metric">
+                <span class="sr-metric-label">Aderência geral</span>
+                <div class="sr-metric-bar">
+                  <div
+                    class="sr-metric-bar-fill"
+                    style="width: {{ analysis.score or 0 }}%;"
+                  ></div>
+                </div>
+                <span class="sr-metric-value">{{ analysis.score or 0 }}%</span>
+              </div>
+            </div>
+
+            <div class="sr-metric" style="margin-top:8px;">
+              <span class="sr-metric-label">
+                Habilidades importantes ainda ausentes no currículo
+              </span>
+              <div class="sr-gaps-pill">
+                {% if analysis.missing_skills %}
+                  {{ analysis.missing_skills|length }} habilidades da vaga não aparecem
+                {% else %}
+                  Nenhuma habilidade essencial da vaga está faltando no currículo
+                {% endif %}
+              </div>
+              <p class="sr-block-caption" style="margin-top:4px;">
+                Veja a aba <strong>Plano de ação</strong> para detalhes de quais são essas
+                habilidades e como destacar cada uma.
+              </p>
+            </div>
+          </div>
+
+          <!--SUB-SCORES -->
+          <div
+            class="sr-plan-card"
+            style="margin-top:12px;padding:12px 14px;border-radius:14px;border:1px solid #262626;background:#0b0b0f;"
+          >
+            <h5>De onde vem essa aderência</h5>
+            <p class="sr-block-caption" style="margin:2px 0 10px;">
+              Mostra como a aderência se distribui entre técnica, experiência e contexto.
+            </p>
+
+            <div
+              class="sr-metrics"
+              style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;"
+            >
+              <div class="sr-metric">
+                <span class="sr-metric-label">Aderência técnica</span>
+                <div class="sr-metric-bar">
+                  <div
+                    class="sr-metric-bar-fill"
+                    style="width: {{ analysis.score_tech or analysis.score or 0 }}%;"
+                  ></div>
+                </div>
+                <span class="sr-metric-value">
+                  {{ analysis.score_tech or analysis.score or 0 }}%
+                </span>
+              </div>
+
+              <div class="sr-metric">
+                <span class="sr-metric-label">Experiência / responsabilidades</span>
+                <div class="sr-metric-bar">
+                  <div
+                    class="sr-metric-bar-fill"
+                    style="width: {{ analysis.score_experience or analysis.score or 0 }}%;"
+                  ></div>
+                </div>
+                <span class="sr-metric-value">
+                  {{ analysis.score_experience or analysis.score or 0 }}%
+                </span>
+              </div>
+
+              <div class="sr-metric">
+                <span class="sr-metric-label">Fit de contexto</span>
+                <div class="sr-metric-bar">
+                  <div
+                    class="sr-metric-bar-fill"
+                    style="width: {{ analysis.score_context or analysis.score or 0 }}%;"
+                  ></div>
+                </div>
+                <span class="sr-metric-value">
+                  {{ analysis.score_context or analysis.score or 0 }}%
+                </span>
+              </div>
+            </div>
+
+            {% set st = analysis.score_tech or analysis.score or 0 %}
+            {% set se = analysis.score_experience or analysis.score or 0 %}
+            {% set sc = analysis.score_context or analysis.score or 0 %}
+            <p class="sr-block-caption" style="margin-top:6px;">
+              {% if st <= se and st <= sc %}
+                Seu ponto mais crítico nesta vaga é <strong>aderência técnica</strong>:
+                foque em aproximar suas ferramentas, sistemas e rotinas das tecnologias citadas no anúncio.
+              {% elif se <= st and se <= sc %}
+                Seu ponto mais crítico nesta vaga é <strong>experiência/senioridade</strong>:
+                deixe mais explícito onde você já fez tarefas parecidas com as responsabilidades da vaga.
+              {% else %}
+                Seu ponto mais crítico nesta vaga é <strong>fit de contexto</strong>:
+                revise localização, modelo de trabalho, idioma e tipo de atuação para conversar melhor com a vaga.
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <hr class="sr-divider" />
+
+      <div class="sr-tabs">
+        <div class="sr-tabs-header">
+          <button class="sr-tab-button sr-tab-active" data-tab="tab1">
+            Auditoria e correções
+          </button>
+          <button class="sr-tab-button" data-tab="tab2">
+            Palavras-chave
+          </button>
+          <button class="sr-tab-button" data-tab="tab3">
+            Plano de ação
+          </button>
+          <button class="sr-tab-button" data-tab="tab4">
+            Modo recrutador
+          </button>
+          <button class="sr-tab-button" data-tab="tab5">
+            Entrevista
+          </button>
+        </div>
+
+        <div class="sr-tabs-body">
+          <div class="sr-tab-content sr-tab-content-active" id="tab1">
+            <h4>Checklist de qualidade</h4>
+            <p class="sr-block-caption">
+              Avaliação baseada em sete aspectos usados com frequência em triagens de currículo.
+            </p>
+
+            {% if audit %}
+              <div class="sr-audit-list">
+                <div class="audit-{{ 'pass' if audit.brevity.status else 'fail' }}">
+                  <span class="audit-title">Currículo objetivo</span>
+                  {{ audit.brevity.feedback }}
+                </div>
+                <div class="audit-{{ 'pass' if audit.customization.status else 'fail' }}">
+                  <span class="audit-title">Adaptação ao texto da vaga</span>
+                  {{ audit.customization.feedback }}
+                </div>
+                <div class="audit-{{ 'pass' if audit.achievements.status else 'fail' }}">
+                  <span class="audit-title">Conquistas descritas com clareza</span>
+                  {{ audit.achievements.feedback }}
+                </div>
+                <div class="audit-{{ 'pass' if audit.certificates.status else 'fail' }}">
+                  <span class="audit-title">Certificados e formações</span>
+                  {{ audit.certificates.feedback }}
+                </div>
+                <div class="audit-{{ 'pass' if audit.contact.status else 'fail' }}">
+                  <span class="audit-title">Dados de contato visíveis</span>
+                  {{ audit.contact.feedback }}
+                </div>
+                <div class="audit-{{ 'pass' if audit.languages.status else 'fail' }}">
+                  <span class="audit-title">Idiomas mencionados</span>
+                  {{ audit.languages.feedback }}
+                </div>
+                <div class="audit-{{ 'pass' if audit.specificity.status else 'fail' }}">
+                  <span class="audit-title">Detalhes e especificidade</span>
+                  {{ audit.specificity.feedback }}
+                </div>
+              </div>
+            {% endif %}
+          </div>
+
+          <!--palavras-chave e pontos fortes -->
+          <div class="sr-tab-content" id="tab2">
+            <h4>Palavras-chave relevantes</h4>
+            <p class="sr-block-caption">
+              Considere incorporar estas expressões de maneira natural nas seções de resumo,
+              experiência e habilidades.
+            </p>
+            {% if analysis.ats_keywords %}
+              <div class="sr-keywords-wrapper">
+                {% for kw in analysis.ats_keywords %}
+                  <span class="custom-badge">
+                    <span class="custom-badge-dot"></span>
+                    {{ kw }}
+                  </span>
+                {% endfor %}
+              </div>
+              <button
+                type="button"
+                class="sr-button sr-button-secondary sr-keywords-copy"
+                onclick="copyKeywords()">
+                Copiar todas as palavras-chave
+              </button>
+            {% else %}
+              <p>Nenhuma palavra-chave relevante foi sinalizada como ausente.</p>
+            {% endif %}
+
+            {% if analysis.strengths %}
+              <div class="sr-results-separator"></div>
+              <div class="sr-success">
+                <strong>Pontos fortes identificados</strong>
+                <ul>
+                  {% for s in analysis.strengths %}
+                    <li>{{ s }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- plano de ação + textos prontos -->
+          <div class="sr-tab-content" id="tab3">
+            <h4>Plano de ação focado na vaga</h4>
+            <p class="sr-block-caption">
+              Priorize primeiro os pontos com maior impacto nesta oportunidade específica.
+            </p>
+            <div class="sr-plan-grid">
+              <div class="sr-plan-card" style="padding:12px 14px;border-radius:14px;border:1px solid #262626;background:#0b0b0f;">
+                <h5>Hard skills em evidência</h5>
+                {% if analysis.missing_skills %}
+                  {% for g in analysis.missing_skills %}
+                    <div class="gap-card">{{ g }}</div>
+                  {% endfor %}
+                {% else %}
+                  <p>Nenhuma lacuna técnica relevante foi encontrada.</p>
+                {% endif %}
+              </div>
+              <div class="sr-plan-card" style="padding:12px 14px;border-radius:14px;border:1px solid #262626;background:#0b0b0f;">
+                <h5>Recomendação principal</h5>
+                <p class="sr-golden-tip">
+                  {{ analysis.golden_tip }}
+                </p>
+              </div>
+            </div>
+            <div class="sr-results-separator"></div>
+            <p><strong>Textos prontos para uso</strong></p>
+            <p class="sr-block-caption">
+              Use estes textos como base para atualizar seu currículo em função desta vaga específica.
+            </p>
+            {% if rewritten %}
+              <div class="sr-rewrite-grid">
+                <div class="sr-rewrite-card">
+                  <div class="sr-rewrite-header">
+                    <span class="sr-rewrite-title">Formato STAR</span>
+                    <button
+                      type="button"
+                      class="sr-chip-action"
+                      onclick="copyText('rew-star')">
+                      Copiar
+                    </button>
+                  </div>
+                  <p class="sr-ready-text">
+                    {{ rewritten.star_version }}
+                  </p>
+                  <textarea
+                    id="rew-star"
+                    readonly
+                    style="position:absolute;left:-9999px;height:0;opacity:0;"
+                  >{{ rewritten.star_version }}</textarea>
+                </div>
+                <div class="sr-rewrite-card">
+                  <div class="sr-rewrite-header">
+                    <span class="sr-rewrite-title">Otimizado para palavras-chave</span>
+                    <button
+                      type="button"
+                      class="sr-chip-action"
+                      onclick="copyText('rew-ats')">
+                      Copiar
+                    </button>
+                  </div>
+                  <p class="sr-ready-text">
+                    {{ rewritten.ats_version }}
+                  </p>
+                  <textarea
+                    id="rew-ats"
+                    readonly
+                    style="position:absolute;left:-9999px;height:0;opacity:0;"
+                  >{{ rewritten.ats_version }}</textarea>
+                </div>
+                <div class="sr-rewrite-card">
+                  <div class="sr-rewrite-header">
+                    <span class="sr-rewrite-title">Versão executiva em tópicos</span>
+                    <button
+                      type="button"
+                      class="sr-chip-action"
+                      onclick="copyText('rew-exec')">
+                      Copiar
+                    </button>
+                  </div>
+                  <p class="sr-ready-text">
+                    {% if rewritten.executive_version is string %}
+                      {{ rewritten.executive_version }}
+                    {% else %}
+                      {% for item in rewritten.executive_version %}
+                        • {{ item }}<br />
+                      {% endfor %}
+                    {% endif %}
+                  </p>
+                  <textarea
+                    id="rew-exec"
+                    readonly
+                    style="position:absolute;left:-9999px;height:0;opacity:0;"
+                  >{% if rewritten.executive_version is string %}
+                   {{ rewritten.executive_version }}
+                   {% else %}
+                   {% for item in rewritten.executive_version %}
+                   • {{ item }}
+                   {% endfor %}{% endif %}
+                  </textarea>
+                </div>
+              </div>
+            {% else %}
+              <div class="sr-warning">
+                Não foi possível gerar versões reescritas com o conteúdo enviado.
+              </div>
+            {% endif %}
+          </div>
+
+          <!--modo recrutador -->
+          <div class="sr-tab-content" id="tab4">
+            <h4>Visão rápida de recrutador</h4>
+            <p class="sr-block-caption">
+              Como alguém de recrutamento provavelmente enxerga seu perfil ao bater o olho na vaga.
+            </p>
+            <div class="sr-plan-grid">
+              <div class="sr-plan-card" style="padding:12px 14px;border-radius:14px;border:1px solid #262626;background:#0b0b0f;">
+                <h5>Primeiros 10 segundos de leitura</h5>
+                <p class="sr-ready-text">
+                  {% if analysis.recruiter_view and analysis.recruiter_view.summary %}
+                    {{ analysis.recruiter_view.summary }}
+                  {% else %}
+                    {% if analysis.score >= 80 %}
+                      Você aparenta ter um perfil muito alinhado com a vaga. Suas experiências e palavras-chave principais aparecem com boa frequência logo nas primeiras seções do currículo.
+                    {% elif analysis.score >= 60 %}
+                      O currículo parece competitivo, mas um recrutador atento pode sentir falta de alguns pontos mais específicos da vaga. Vale reforçar termos técnicos, resultados e contexto do seu atual cargo.
+                    {% else %}
+                      A leitura inicial provavelmente passa a impressão de um perfil genérico ou pouco conectado à vaga. Foque em adaptar título, resumo profissional e 2–3 experiências principais para falar exatamente a língua da vaga.
+                    {% endif %}
+                  {% endif %}
+                </p>
+              </div>
+              <div class="sr-plan-card" style="padding:12px 14px;border-radius:14px;border:1px solid #262626;background:#0b0b0f;">
+                <h5>Riscos de reprovação</h5>
+                {% if analysis.recruiter_view and analysis.recruiter_view.red_flags %}
+                  <ul class="sr-howto-list">
+                    {% for rf in analysis.recruiter_view.red_flags %}
+                      <li>{{ rf }}</li>
+                    {% endfor %}
+                  </ul>
+                {% elif analysis.missing_skills %}
+                  <ul class="sr-howto-list">
+                    {% for g in analysis.missing_skills %}
+                      <li>{{ g }}</li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <p>Não foram identificadas lacunas críticas que derrubariam seu currículo de imediato.</p>
+                {% endif %}
+              </div>
+              <div class="sr-plan-card" style="padding:12px 14px;border-radius:14px;border:1px solid #262626;background:#0b0b0f;">
+                <h5>Checklist final antes de enviar</h5>
+                {% if analysis.recruiter_view and analysis.recruiter_view.final_checklist %}
+                  <ul class="sr-howto-list">
+                    {% for item in analysis.recruiter_view.final_checklist %}
+                      <li>{{ item }}</li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <ul class="sr-howto-list">
+                    <li>O título do seu cargo atual conversa com o título da vaga?</li>
+                    <li>Há pelo menos 2–3 resultados mensuráveis em projetos relevantes?</li>
+                    <li>As principais ferramentas da descrição aparecem no currículo?</li>
+                    <li>Resumo profissional cita o tipo de vaga e nível de atuação?</li>
+                  </ul>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- entrevista -->
+          <div class="sr-tab-content" id="tab5">
+            <h4>Roteiro rápido para entrevista</h4>
+            <p class="sr-block-caption">
+              Use estes pontos para treinar respostas focadas nesta oportunidade específica.
+            </p>
+            <div class="sr-plan-grid">
+              <div class="sr-plan-card" style="padding:12px 14px;border-radius:14px;border:1px solid #262626;background:#0b0b0f;">
+                <h5>Perguntas prováveis sobre experiência</h5>
+                <ul class="sr-howto-list">
+                  <li>Conte uma situação em que você gerou um resultado mensurável diretamente ligado às responsabilidades desta vaga.</li>
+                  <li>Como você prioriza atividades quando tem múltiplas demandas ao mesmo tempo?</li>
+                  <li>Fale sobre um erro que cometeu em um projeto e o que mudou depois disso.</li>
+                </ul>
+              </div>
+              <div class="sr-plan-card" style="padding:12px 14px;border-radius:14px;border:1px solid #262626;background:#0b0b0f;">
+                <h5>Perguntas técnicas baseadas nas lacunas</h5>
+                {% if analysis.missing_skills %}
+                  <ul class="sr-howto-list">
+                    {% for g in analysis.missing_skills %}
+                      <li>Se hoje eu te pedisse para aplicar <strong>{{ g }}</strong>, que exemplo prático você conseguiria me contar?</li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <p>Nenhuma lacuna crítica identificada. Revise mesmo assim os requisitos técnicos da vaga e prepare exemplos práticos.</p>
+                {% endif %}
+              </div>
+              <div class="sr-plan-card" style="padding:12px 14px;border-radius:14px;border:1px solid #262626;background:#0b0b0f;">
+                <h5>Resumo de 30 segundos para abrir a entrevista</h5>
+                <p class="sr-ready-text">
+                  {% if rewritten and rewritten.executive_version %}
+                    {% if rewritten.executive_version is string %}
+                      {{ rewritten.executive_version }}
+                    {% else %}
+                      {% for item in rewritten.executive_version %}
+                        • {{ item }}<br />
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}
+                    Sou um(a) profissional focado(a) em {{ job_title or "esta área" }}, com experiência em entregar resultados em rotinas parecidas com as desta vaga, e estou buscando um contexto em que eu possa crescer contribuindo com processos bem organizados e indicadores claros.
+                  {% endif %}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var isLoggedIn = {{ 'true' if logged_in else 'false' }};
+    var fileInput = document.querySelector('input[name="cv_file"]');
+    var fileInfo = document.getElementById("cv-file-info");
+    var fileNameSpan = document.getElementById("cv-file-name");
+    var fileLabelSpan = document.getElementById("cv-file-label");
+    var uploadArea = document.querySelector(".sr-upload-area");
+
+    if (fileInput && fileInfo && fileNameSpan && fileLabelSpan && uploadArea) {
+      fileInput.addEventListener("change", function () {
+        if (fileInput.files && fileInput.files.length > 0) {
+          var name = fileInput.files[0].name;
+
+          // corta nomes gigantes, mas mantendo começo e fim
+          if (name.length > 40) {
+            name = name.slice(0, 26) + "..." + name.slice(-10);
+          }
+
+          fileNameSpan.textContent = name;
+          fileLabelSpan.textContent = "Arquivo selecionado:";
+          fileInfo.classList.add("sr-upload-file-info-visible");
+          uploadArea.classList.add("sr-upload-has-file");
+        } else {
+          fileNameSpan.textContent = "";
+          fileLabelSpan.textContent = "Nenhum arquivo selecionado";
+          fileInfo.classList.remove("sr-upload-file-info-visible");
+          uploadArea.classList.remove("sr-upload-has-file");
+        }
+      });
+    }
+
+    //Alterações modo link/manual
+    var modeRadios = document.querySelectorAll('input[name="job_mode"]');
+    var autoBlock = document.getElementById("job-mode-auto");
+    var manualBlock = document.getElementById("job-mode-manual");
+
+    function updateJobMode(mode) {
+      if (!autoBlock || !manualBlock) return;
+      if (mode === "manual") {
+        autoBlock.style.display = "none";
+        manualBlock.style.display = "block";
+      } else {
+        autoBlock.style.display = "block";
+        manualBlock.style.display = "none";
+      }
+    }
+
+    if (modeRadios && modeRadios.length > 0) {
+      modeRadios.forEach(function (r) {
+        r.addEventListener("change", function (e) {
+          updateJobMode(e.target.value);
+        });
+      });
+      updateJobMode("{{ job_mode or 'auto' }}");
+    }
+
+    // Confirmação de informações extraídas do link
+    var analyzeForm = document.getElementById("analyze-form");
+    var jobLinkInput = document.querySelector('input[name="job_link"]');
+    var loadingOverlay = document.getElementById("sr-loading");
+    var confirmModal = document.getElementById("job-confirm-modal");
+    var confirmJobTitleInput = document.getElementById("confirm-job-title");
+    var confirmCompanyInput = document.getElementById("confirm-company");
+    var confirmJobDescriptionInput = document.getElementById("confirm-job-description");
+    var confirmCancelBtn = document.getElementById("job-confirm-cancel");
+    var confirmOkBtn = document.getElementById("job-confirm-ok");
+
+    function openConfirmModal() {
+      if (typeof toggleModal === "function") {
+        toggleModal("job-confirm-modal");
+      } else if (confirmModal) {
+        confirmModal.classList.add("sr-modal-open");
+      }
+    }
+
+    function closeConfirmModal() {
+      if (typeof toggleModal === "function") {
+        toggleModal("job-confirm-modal");
+      } else if (confirmModal) {
+        confirmModal.classList.remove("sr-modal-open");
+      }
+    }
+
+    if (confirmCancelBtn) {
+      confirmCancelBtn.addEventListener("click", function () {
+        closeConfirmModal();
+      });
+    }
+
+    if (confirmOkBtn) {
+      confirmOkBtn.addEventListener("click", function () {
+        closeConfirmModal();
+        if (loadingOverlay) {
+          loadingOverlay.classList.add("sr-loading-visible");
+        }
+        if (analyzeForm) {
+          analyzeForm.submit();
+        }
+      });
+    }
+
+          if (analyzeForm) {
+      analyzeForm.addEventListener("submit", function (e) {
+        var selectedMode = document.querySelector('input[name="job_mode"]:checked');
+        var mode = selectedMode ? selectedMode.value : "auto";
+        if (mode === "auto") {
+          var linkVal = jobLinkInput ? jobLinkInput.value.trim() : "";
+
+          if (!linkVal) {
+            return;
+          }
+          if (!isLoggedIn) {
+            return;
+          }
+          e.preventDefault();
+          fetch("{{ url_for('preview_job') }}", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ job_link: linkVal })
+          })
+            .then(function (resp) {
+              return resp.json();
+            })
+            .then(function (data) {
+              if (loadingOverlay) {
+                loadingOverlay.classList.remove("sr-loading-visible");
+              }
+
+              if (!data || !data.success) {
+                alert(
+                  (data && data.message) ||
+                    "Não foi possível obter as informações da vaga automaticamente. " +
+                    "Você pode tentar novamente ou usar o modo manual."
+                );
+                return;
+              }
+
+              if (confirmJobTitleInput) {
+                confirmJobTitleInput.value = data.job_title || "";
+              }
+              if (confirmCompanyInput) {
+                confirmCompanyInput.value = data.company || "";
+              }
+              if (confirmJobDescriptionInput) {
+                confirmJobDescriptionInput.value = data.job_description || "";
+              }
+
+              openConfirmModal();
+            })
+            .catch(function (err) {
+              console.error(err);
+              if (loadingOverlay) {
+                loadingOverlay.classList.remove("sr-loading-visible");
+              }
+              alert(
+                "Ocorreu um erro ao tentar ler a vaga pelo link. " +
+                  "Você pode tentar novamente ou usar o modo manual."
+              );
+            });
+        }
+        // Se for modo manual, não faz nada aqui: o submit segue normal
+      });
+    }
+  });
+</script>
+
+{% if analysis %}
+<script>
+  (function () {
+    var score = {{ analysis.score or 0 }};
+    var ring = document.getElementById("score-ring");
+    var text = document.getElementById("score-text");
+
+    var color = "#3b82f6";
+    if (score >= 80) {
+      color = "#22c55e";
+    } else if (score < 60) {
+      color = "#f97316";
+    }
+    if (ring) {
+      ring.style.stroke = color;
+    }
+
+    var circumference = 377;
+    var startOffset = circumference;
+    var targetOffset = circumference - (score / 100) * circumference;
+
+    if (ring) {
+      ring.style.strokeDasharray = circumference;
+      ring.style.strokeDashoffset = startOffset;
+      setTimeout(function () {
+        ring.style.strokeDashoffset = targetOffset;
+      }, 120);
+    }
+
+    var start = 0;
+    var duration = 1100;
+    var startTime = performance.now();
+
+    function update(now) {
+      var progress = Math.min((now - startTime) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 4);
+      var value = Math.floor(start + (score - start) * eased);
+      if (text) {
+        text.textContent = value + "%";
+      }
+      if (progress < 1) {
+        requestAnimationFrame(update);
+      }
+    }
+    requestAnimationFrame(update);
+  })();
+
+  // Abas modal de resultados
+  var tabButtons = document.querySelectorAll(".sr-tab-button");
+  var tabContents = document.querySelectorAll(".sr-tab-content");
+
+  tabButtons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var target = btn.getAttribute("data-tab");
+      tabButtons.forEach(function (b) {
+        b.classList.remove("sr-tab-active");
+      });
+      tabContents.forEach(function (c) {
+        c.classList.remove("sr-tab-content-active");
+      });
+      btn.classList.add("sr-tab-active");
+      var el = document.getElementById(target);
+      if (el) {
+        el.classList.add("sr-tab-content-active");
+      }
+    });
+  });
+
+  function copyText(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.select();
+    el.setSelectionRange(0, 99999);
+    document.execCommand("copy");
+  }
+
+  function copyKeywords() {
+    var chips = document.querySelectorAll(".custom-badge");
+    if (!chips.length) return;
+    var values = Array.prototype.map.call(chips, function (c) {
+      return c.textContent.trim();
+    });
+    if (!values.length) return;
+    var tmp = document.createElement("textarea");
+    tmp.value = values.join(", ");
+    document.body.appendChild(tmp);
+    tmp.select();
+    document.execCommand("copy");
+    document.body.removeChild(tmp);
+  }
+
+  window.copyText = copyText;
+  window.copyKeywords = copyKeywords;
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>ResumeAI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body class="{% if username or logged_in %}sr-body-logged{% endif %}">
+  <header class="sr-header">
+    <div class="sr-header-inner">
+      <div class="sr-logo">
+        <span class="sr-logo-gradient">ResumeAI</span>
+      </div>
+
+      <nav class="sr-nav">
+        {% if not (username or logged_in) %}
+          <button
+            class="sr-button sr-button-secondary"
+            type="button"
+            onclick="toggleModal('login-modal')"
+          >
+            Entrar
+          </button>
+          <button
+            class="sr-button sr-button-primary"
+            type="button"
+            onclick="toggleModal('signup-modal')"
+          >
+            Criar conta
+          </button>
+        {% else %}
+          <!-- Usuário logado(header)-->
+          <div class="sr-header-user-wrapper">
+            <button
+              type="button"
+              class="sr-header-user"
+              id="sr-user-button"
+              aria-haspopup="true"
+              aria-expanded="false"
+            >
+              <div class="sr-avatar">
+                {{ (username or 'US')[:2] | upper }}
+              </div>
+              <div class="sr-avatar-info">
+                <span class="sr-avatar-name">{{ username or 'Usuário' }}</span>
+                <span class="sr-avatar-caption">Sessão ativa</span>
+              </div>
+            </button>
+
+            <div
+              id="sr-user-menu"
+              class="sr-user-menu"
+              role="menu"
+              aria-labelledby="sr-user-button"
+            >
+              <a
+                href="{{ url_for('logout') }}"
+                class="sr-user-menu-item"
+                role="menuitem"
+              >
+                Sair
+              </a>
+            </div>
+          </div>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <div class="sr-layout">
+    {% if username or logged_in %}
+      <aside class="sr-sidebar" style="max-height:100vh; overflow-y:auto;">
+        <div class="sr-sidebar-top">
+          <div class="sr-sidebar-title">
+            <span class="sr-sidebar-label">Menu</span>
+          </div>
+          <nav class="sr-sidebar-nav">
+            <a
+              href="{{ url_for('index') }}"
+              class="sr-sidebar-link {% if request.endpoint == 'index' or request.endpoint == 'analyze' %}sr-sidebar-link-active{% endif %}"
+            >
+              <span>Analisador</span>
+            </a>
+            <a
+              href="{{ url_for('dashboard') }}"
+              class="sr-sidebar-link {% if request.endpoint == 'dashboard' %}sr-sidebar-link-active{% endif %}"
+            >
+              <span>Dashboard</span>
+            </a>
+          </nav>
+        </div>
+      </aside>
+    {% endif %}
+
+    <main class="sr-main">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="sr-flash-container">
+            {% for category, message in messages %}
+              <div class="sr-flash sr-flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  {% if not (username or logged_in) %}
+  <div id="login-modal" class="sr-modal">
+    <div class="sr-modal-content">
+      <h2>Entrar</h2>
+      <p class="sr-modal-subtitle">
+        Acesse sua conta para manter o histórico de análises e acompanhar a evolução do seu currículo.
+      </p>
+      <form method="post" action="{{ url_for('login') }}">
+        <div class="sr-input-wrapper">
+          <input type="text" name="username" placeholder="Usuário" required />
+        </div>
+
+        <div class="sr-input-wrapper">
+          <input type="password" name="password" placeholder="Senha" required />
+        </div>
+        <div class="sr-results-separator"></div>
+        <div class="sr-modal-actions">
+          <button type="submit" class="sr-button sr-button-primary">Entrar</button>
+          <button
+            type="button"
+            class="sr-button sr-button-tertiary"
+            onclick="toggleModal('login-modal')"
+          >
+            Fechar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="signup-modal" class="sr-modal">
+    <div class="sr-modal-content">
+      <h2>Criar conta</h2>
+      <p class="sr-modal-subtitle">
+        Crie uma conta para salvar análises e acompanhar seus resultados ao longo do tempo.
+      </p>
+      <form method="post" action="{{ url_for('signup') }}">
+        <div class="sr-input-wrapper">
+          <input type="text" name="username" placeholder="Usuário" required />
+        </div>
+
+        <div class="sr-input-wrapper">
+          <input type="password" name="password" placeholder="Senha" required />
+        </div>
+        <div class="sr-results-separator"></div>
+        <div class="sr-modal-actions">
+          <button type="submit" class="sr-button sr-button-primary">
+            Cadastrar
+          </button>
+          <button
+            type="button"
+            class="sr-button sr-button-tertiary"
+            onclick="toggleModal('signup-modal')"
+          >
+            Fechar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- barra de loading-->
+  <div id="sr-loading" class="sr-loading-overlay">
+    <div class="sr-loading-inner">
+      <div class="sr-loading-title">Preparando sua análise</div>
+      <div class="sr-loading-bar">
+        <div id="sr-loading-bar-fill" class="sr-loading-bar-fill"></div>
+      </div>
+      <div class="sr-loading-step">
+        <span id="sr-loading-step-label">Analisando currículo...</span>
+      </div>
+    </div>
+  </div>
+  <style>
+    :root {
+      --sr-font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+    }
+
+    body,
+    button,
+    input,
+    textarea,
+    select,
+    .sr-header,
+    .sr-nav,
+    .sr-main,
+    .sr-sidebar,
+    .sr-hero,
+    .sr-hero-inner,
+    .sr-title-gradient,
+    .sr-hero-text,
+    .sr-card,
+    .sr-table,
+    .sr-modal,
+    .sr-modal-content,
+    .sr-modal-howto,
+    .sr-modal-analysis,
+    .sr-button,
+    .sr-flash,
+    .sr-kpi,
+    .sr-kpi-label,
+    .sr-kpi-value,
+    .sr-kpi-caption,
+    .sr-panel-label,
+    .sr-panel-field,
+    .sr-panel-textarea,
+    .sr-block-caption,
+    .sr-caption {
+      font-family: var(--sr-font-sans);
+    }
+
+    /* Chip de usuário no header */
+    .sr-header-user-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .sr-header-user {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: #020617;
+      border: 1px solid #111827;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .sr-header-user:hover {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.4);
+    }
+
+    .sr-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 9999px;
+      background: linear-gradient(120deg, #4f46e5, #a855f7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #f9fafb;
+    }
+
+    .sr-avatar-info {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      line-height: 1.1;
+    }
+
+    .sr-avatar-name {
+      font-size: 0.78rem;
+      color: #e5e7eb;
+    }
+
+    .sr-avatar-caption {
+      font-size: 0.68rem;
+      color: #9ca3af;
+    }
+
+    /* Menu user (dropdown) */
+    #sr-user-menu {
+      position: absolute !important;
+      right: 0;
+      top: 110%;
+      min-width: 160px;
+
+      background: #020617;
+      border-radius: 12px;
+      border: 1px solid #1f2937;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.8);
+
+      padding: 4px 0;
+      display: none;
+      z-index: 9999;
+    }
+
+    /* quando aberto */
+    .sr-user-menu-open {
+      display: block !important;
+    }
+
+    #sr-user-menu .sr-user-menu-item {
+      position: relative !important;
+      display: block;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      color: #e5e7eb;
+      text-decoration: none;
+      white-space: nowrap;
+
+      background: transparent !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      margin: 0;
+    }
+
+    #sr-user-menu .sr-user-menu-item:hover {
+      background: #111827 !important;
+    }
+
+    #sr-loading {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 9999;
+    }
+
+    #sr-loading.sr-loading-visible {
+      display: flex;
+    }
+
+    #sr-loading .sr-loading-inner {
+      width: min(420px, 90vw);
+      padding: 22px 26px;
+      border-radius: 18px;
+      background: #020617;
+      border: 1px solid #1f2937;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.65);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #sr-loading .sr-loading-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+
+    #sr-loading .sr-loading-bar {
+      width: 100%;
+      height: 8px;
+      border-radius: 9999px;
+      background: #020617;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    #sr-loading-bar-fill {
+      height: 100%;
+      width: 10%;
+      border-radius: inherit;
+      background: linear-gradient(
+        90deg,
+        #4f46e5,
+        #a855f7,
+        #22d3ee,
+        #4f46e5
+      );
+      background-size: 300% 100%;
+      animation: sr-loading-gradient 2.2s linear infinite;
+      transition: width 0.45s ease-out;
+      box-shadow:
+        0 0 6px rgba(168, 85, 247, 0.7),
+        0 0 14px rgba(34, 211, 238, 0.5);
+    }
+
+    #sr-loading .sr-loading-step {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-top: 6px;
+    }
+
+    @keyframes sr-loading-gradient {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+  </style>
+
+  <script>
+    function toggleModal(id) {
+      var modal = document.getElementById(id);
+      if (!modal) return;
+      if (modal.classList.contains("sr-modal-open")) {
+        modal.classList.remove("sr-modal-open");
+      } else {
+        modal.classList.add("sr-modal-open");
+      }
+    }
+
+    var srLoadingInterval = null;
+    function startAnalyzeLoading() {
+      var loader = document.getElementById("sr-loading");
+      if (!loader) return;
+      loader.classList.add("sr-loading-visible");
+
+      var bar = document.getElementById("sr-loading-bar-fill");
+      var label = document.getElementById("sr-loading-step-label");
+      if (!bar || !label) return;
+
+      var steps = [
+        "Lendo currículo",
+        "Analisando palavras-chave",
+        "Comparando com a vaga",
+        "Montando relatório de compatibilidade"
+      ];
+      var index = 0;
+      var progress = 10;
+
+      label.textContent = steps[0];
+      bar.style.width = progress + "%";
+
+      if (srLoadingInterval) {
+        clearInterval(srLoadingInterval);
+      }
+
+      srLoadingInterval = setInterval(function () {
+        if (index < steps.length - 1) {
+          index += 1;
+        }
+        progress = Math.min(progress + 20, 95);
+        label.textContent = steps[index];
+        bar.style.width = progress + "%";
+      }, 900);
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      var flashes = document.querySelectorAll(".sr-flash");
+      if (flashes.length) {
+        setTimeout(function () {
+          flashes.forEach(function (el) {
+            el.classList.add("sr-flash-hide");
+          });
+        }, 4000);
+      }
+
+      var userButton = document.getElementById("sr-user-button");
+      var userMenu = document.getElementById("sr-user-menu");
+
+      function adjustUserMenuPosition() {
+        if (!userButton || !userMenu) return;
+        userMenu.style.top = "";
+        userMenu.style.bottom = "";
+
+        var rect = userMenu.getBoundingClientRect();
+        var buttonRect = userButton.getBoundingClientRect();
+        var viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+        if (rect.bottom > viewportHeight) {
+          var offset = viewportHeight - buttonRect.top - 16;
+          userMenu.style.bottom = offset + "px";
+          userMenu.style.top = "auto";
+        }
+      }
+
+      if (userButton && userMenu) {
+        userButton.addEventListener("click", function (event) {
+          event.stopPropagation();
+          var isOpen = userMenu.classList.contains("sr-user-menu-open");
+          if (isOpen) {
+            userMenu.classList.remove("sr-user-menu-open");
+            userButton.setAttribute("aria-expanded", "false");
+          } else {
+            userMenu.classList.add("sr-user-menu-open");
+            userButton.setAttribute("aria-expanded", "true");
+            setTimeout(adjustUserMenuPosition, 0);
+          }
+        });
+
+        document.addEventListener("click", function (event) {
+          if (!userMenu || !userMenu.classList.contains("sr-user-menu-open")) return;
+          if (userButton.contains(event.target) || userMenu.contains(event.target)) {
+            return;
+          }
+          userMenu.classList.remove("sr-user-menu-open");
+          userButton.setAttribute("aria-expanded", "false");
+        });
+      }
+
+      var analyzeForm = document.getElementById("analyze-form");
+      if (analyzeForm) {
+        analyzeForm.addEventListener("submit", function () {
+          startAnalyzeLoading();
+        });
+      }
+    });
+  </script>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

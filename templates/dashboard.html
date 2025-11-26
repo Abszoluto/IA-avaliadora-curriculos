@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="sr-hero sr-hero-compact">
+  <div class="sr-hero-inner">
+    <h1>Painel de análises</h1>
+    <div class="sr-results-separator"></div>
+    <p class="sr-hero-text">
+      Acompanhe como a compatibilidade do currículo com diferentes vagas evolui ao longo do tempo.
+    </p>
+  </div>
+</section>
+
+{% if not has_history %}
+  <section class="sr-card">
+    <p>
+      Ainda não há análises registradas. Use o analisador para avaliar o currículo em relação a uma vaga,
+      e os resultados passarão a ser exibidos aqui.
+    </p>
+  </section>
+{% else %}
+  <section class="sr-card">
+    <div class="sr-kpi-grid">
+      <div class="sr-kpi">
+        <span class="sr-kpi-label">Total de análises</span>
+        <span class="sr-kpi-value">{{ total_analises }}</span>
+        <span class="sr-kpi-caption">Quantidade de combinações currículo/vaga avaliadas</span>
+      </div>
+      <div class="sr-kpi">
+        <span class="sr-kpi-label">Média de score</span>
+        <span class="sr-kpi-value">{{ media_score }}%</span>
+        <span class="sr-kpi-caption">Indicador médio de aderência às vagas</span>
+      </div>
+      <div class="sr-kpi">
+        <span class="sr-kpi-label">Melhor score</span>
+        <span class="sr-kpi-value">{{ melhor_score }}%</span>
+        <span class="sr-kpi-caption">Melhor resultado obtido até agora</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="sr-card">
+    <div class="sr-dashboard-grid">
+      <div>
+        <div class="sr-card-section-header">
+          <h3>Evolução do score</h3>
+          <span class="sr-card-section-caption">
+            Score de compatibilidade ao longo das análises realizadas.
+          </span>
+        </div>
+        <canvas id="scoreChart" height="200"></canvas>
+      </div>
+      <div>
+        <div class="sr-card-section-header">
+          <h3>Skills mais recorrentes como lacuna</h3>
+          <span class="sr-card-section-caption">
+            Habilidades que mais apareceram como pontos a desenvolver.
+          </span>
+        </div>
+        {% if skills_labels %}
+          <canvas id="skillsChart" height="200"></canvas>
+        {% else %}
+          <p>Ainda não há informações suficientes para este gráfico.</p>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <section class="sr-card">
+    <h3>Histórico de análises</h3>
+    <p class="sr-caption">
+      Cada linha representa uma avaliação do currículo em relação a uma vaga específica.
+    </p>
+    <div class="sr-table-wrapper">
+      <table class="sr-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Vaga</th>
+            <th>Score</th>
+            <th>Status</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in table_rows %}
+            <tr data-score="{{ row.score }}">
+              <td>{{ row.data }}</td>
+              <td class="sr-table-job" title="{{ row.vaga }}">{{ row.vaga }}</td>
+              <td>{{ row.score }}%</td>
+              <td>
+                <span class="sr-status-pill">{{ row.status }}</span>
+              </td>
+              <td>
+                {% if row.link %}
+                  <a
+                    href="{{ row.link }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="sr-job-link"
+                  >
+                    Abrir
+                  </a>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if has_history %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  var scoreLabels = {{ score_labels|tojson }};
+  var scoreValues = {{ score_values|tojson }};
+  var skillsLabels = {{ skills_labels|tojson }};
+  var skillsValues = {{ skills_values|tojson }};
+  var brandColor = "#a855f7";
+  var brandColorSoft = "rgba(168, 85, 247, 0.85)";
+  var brandColorBg = "rgba(168, 85, 247, 0.15)";
+
+  var ctxScore = document.getElementById("scoreChart").getContext("2d");
+  new Chart(ctxScore, {
+    type: "line",
+    data: {
+      labels: scoreLabels,
+      datasets: [
+        {
+          label: "Score",
+          data: scoreValues,
+          fill: false,
+          borderWidth: 2,
+          tension: 0.25,
+          borderColor: brandColor,
+          pointBackgroundColor: brandColor,
+          pointBorderColor: brandColor
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          ticks: { color: "#9ca3af" },
+          grid: { color: "#111827" }
+        },
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: { color: "#9ca3af" },
+          grid: { color: "#111827" }
+        }
+      }
+    }
+  });
+
+  if (skillsLabels.length > 0) {
+    var ctxSkills = document.getElementById("skillsChart").getContext("2d");
+    new Chart(ctxSkills, {
+      type: "bar",
+      data: {
+        labels: skillsLabels,
+        datasets: [
+          {
+            label: "Frequência",
+            data: skillsValues,
+            borderWidth: 1,
+            backgroundColor: brandColorSoft,
+            borderColor: brandColor
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            ticks: { color: "#9ca3af" },
+            grid: { color: "#111827" }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { color: "#9ca3af" },
+            grid: { color: "#111827" }
+          }
+        }
+      }
+    });
+  }
+</script>
+{% endif %}
+{% endblock %}

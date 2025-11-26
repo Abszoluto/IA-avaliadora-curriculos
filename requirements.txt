@@ -1,0 +1,7 @@
+flask
+groq
+scikit-learn
+nltk
+pandas
+requests
+beautifulsoup4
