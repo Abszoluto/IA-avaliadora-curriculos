@@ -48,7 +48,7 @@ http://127.0.0.1:5000/
 Back-end:
 - Python 3
 - Flask
-- SQLite (via `sqlite3`)
+- SQLite (`sqlite3`)
 - Requests + BeautifulSoup para scraping de vagas do LinkedIn
 - Groq API para geração de texto (modelo `llama-3.3-70b-versatile`)
 - scikit-learn (TF-IDF, cosine similarity)
@@ -56,8 +56,8 @@ Back-end:
 - Pandas (ajustes pontuais de dados)
 
 Front-end:
-- HTML com templates Jinja2 (`base.html`, `index.html`, `dashboard.html`)
-- CSS customizado (tema escuro, componentes próprios)
+- HTML
+- CSS
 - JavaScript vanilla para comportamento do formulário, modais, abas e loading
 ---
 
