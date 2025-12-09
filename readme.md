@@ -2,7 +2,6 @@
 Aplicação web em Flask para avaliar a compatibilidade entre um currículo e uma vaga específica.  
 O foco é bem prático: ajudar a pessoa candidata a entender se faz sentido aplicar para a vaga, o que está faltando no currículo e como melhorar o texto.
 
----
 ## O que o sistema faz
 - Cadastro e login de usuários (cada pessoa tem seu próprio histórico).
 - Upload de currículo em PDF/DOCX.
@@ -33,7 +32,6 @@ O foco é bem prático: ajudar a pessoa candidata a entender se faz sentido apli
   - link original da vaga.
 
 
----
 # Como executar o projeto
 - Instalação de dependências:
 pip install -r requirements.txt
@@ -59,7 +57,7 @@ Front-end:
 - HTML
 - CSS
 - JavaScript vanilla para comportamento do formulário, modais, abas e loading
----
+
 
 ## Estrutura de pastas (resumo)
 ```text
