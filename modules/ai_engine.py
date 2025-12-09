@@ -9,6 +9,9 @@ import re
 # Pra rodar local, precisa setar a API_KEY groq
 #API_KEY = ""
 
+# Pra rodar no Railway.. Variável de ambiente "GROQ_API_KEY"
+API_KEY = os.getenv("GROQ_API_KEY")
+
 client = Groq(api_key=API_KEY)
 
 try:
